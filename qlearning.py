@@ -22,7 +22,7 @@ class QLearningAgent:
         """
         Q-Learning Agent
 
-        You shoud not use directly self._qvalues, but instead of its getter/setter.
+        You shoud not use directly self._qvalues, but instead its getter/setter.
         """
         self.legal_actions = legal_actions
         self._qvalues: QValues = defaultdict(lambda: defaultdict(int))
@@ -49,6 +49,10 @@ class QLearningAgent:
         """
         value = 0.0
         # BEGIN SOLUTION
+        for a in range(len(self.legal_actions)):
+            buffer = self.get_qvalue(state, a)
+            if buffer > value:
+                value = buffer
         # END SOLUTION
         return value
 
@@ -63,6 +67,10 @@ class QLearningAgent:
         """
         q_value = 0.0
         # BEGIN SOLUTION
+        q_old = self.get_value(state, action)
+        td_target = reward + self.gamma * self.get_value(next_state)
+        td_error = td_target - q_old
+        q_value = q_old + self.learning_rate * td_error
         # END SOLUTION
 
         self.set_qvalue(state, action, q_value)
@@ -82,7 +90,9 @@ class QLearningAgent:
         """
         Compute the action to take in the current state, including exploration.
 
-        Exploration is done with epsilon-greey. Namely, with probability self.epsilon, we should take a random action, and otherwise the best policy action (self.get_best_action).
+        Exploration is done with epsilon-greedy. Namely, with probability 
+        self.epsilon, we should take a random action, and otherwise 
+        the best policy action (self.get_best_action).
 
         Note: To pick randomly from a list, use random.choice(list).
               To pick True or False with a given probablity, generate uniform number in [0, 1]
