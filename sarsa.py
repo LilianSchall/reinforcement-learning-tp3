@@ -47,6 +47,10 @@ class SarsaAgent:
         """
         value = 0.0
         # BEGIN SOLUTION
+        for a in range(len(self.legal_actions)):
+            buffer = self.get_qvalue(state, a)
+            if buffer > value:
+                value = buffer
         # END SOLUTION
         return value
 
@@ -61,6 +65,10 @@ class SarsaAgent:
         """
         q_value = 0.0
         # BEGIN SOLUTION
+        q_old = self.get_qvalue(state, action)
+        td_target = reward + self.gamma * self.get_qvalue(next_state, action)
+        td_error = td_target - q_old
+        q_value = q_old + self.learning_rate * td_error
         # END SOLUTION
 
         self.set_qvalue(state, action, q_value)

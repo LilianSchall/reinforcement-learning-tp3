@@ -68,7 +68,7 @@ class QLearningAgent:
         """
         q_value = 0.0
         # BEGIN SOLUTION
-        q_old = self.get_value(state, action)
+        q_old = self.get_qvalue(state, action)
         td_target = reward + self.gamma * self.get_value(next_state)
         td_error = td_target - q_old
         q_value = q_old + self.learning_rate * td_error
