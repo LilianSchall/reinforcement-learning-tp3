@@ -30,6 +30,9 @@ class QLearningAgentEpsScheduling(QLearningAgent):
         self.epsilon = self.epsilon_start
         self.timestep = 0
 
+    def learp(self, v1: float, v2: float, t: float) -> float:
+        return np.clip(v1 + t * (v2 - v1), v2, v1)
+
     def get_action(self, state: State) -> Action:
         """
         Compute the action to take in the current state, including exploration.
@@ -43,6 +46,19 @@ class QLearningAgentEpsScheduling(QLearningAgent):
         action = self.legal_actions[0]
 
         # BEGIN SOLUTION
+        epsilon = self.learp(
+            self.epsilon_start,
+            self.epsilon_end,
+            self.timestep / self.epsilon_decay_steps
+        )
+        random_choice_used = np.random.uniform(0, 1) < epsilon
+
+        if random_choice_used:
+            action = random.choice(self.legal_actions)
+        else:
+            action = self.get_best_action(state)
+
+        self.timestep += 1
         # END SOLUTION
 
         return action

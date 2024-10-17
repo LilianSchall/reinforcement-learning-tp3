@@ -7,6 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
+moviepy = {version = "^1.0.3"}
 pygame = {version = "^2.5.2", allow-prereleases = true}
 jupyterlab = {version = "^4.1.0a2", allow-prereleases = true}
 numpy = {version = "^1.26.1", allow-prereleases = true}

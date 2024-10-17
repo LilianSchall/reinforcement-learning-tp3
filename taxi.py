@@ -20,13 +20,21 @@ et vos résultats (max 1 page).
 
 import typing as t
 import gymnasium as gym
+from gymnasium.wrappers import RecordEpisodeStatistics, RecordVideo
 import numpy as np
 from qlearning import QLearningAgent
 from qlearning_eps_scheduling import QLearningAgentEpsScheduling
-from sarsa import SARSAAgent
+from sarsa import SarsaAgent
 
 
 env = gym.make("Taxi-v3", render_mode="rgb_array")
+# env = RecordVideo(
+#     env,
+#     video_folder="videos",
+#     name_prefix="training",
+#     episode_trigger=lambda x: x % 1 == 0
+# )
+# env = RecordEpisodeStatistics(env)
 n_actions = env.action_space.n  # type: ignore
 
 
@@ -58,6 +66,11 @@ def play_and_train(env: gym.Env, agent: QLearningAgent, t_max=int(1e4)) -> float
 
         # Train agent for state s
         # BEGIN SOLUTION
+        total_reward += r
+        agent.update(s, a, r, next_s)
+        s = next_s
+        if done:
+            break
         # END SOLUTION
 
     return total_reward
@@ -70,7 +83,17 @@ for i in range(1000):
         print("mean reward", np.mean(rewards[-100:]))
 
 assert np.mean(rewards[-100:]) > 0.0
-# TODO: créer des vidéos de l'agent en action
+# créer des vidéos de l'agent en action
+env = gym.make("Taxi-v3", render_mode="rgb_array")
+env = RecordVideo(
+    env,
+    video_folder="videos",
+    name_prefix="qlearning",
+    episode_trigger=lambda x: x % 1 == 0
+)
+env = RecordEpisodeStatistics(env)
+print("Reward for testing: " + str(play_and_train(env, agent)))
+env.close()
 
 #################################################
 # 2. Play with QLearningAgentEpsScheduling
@@ -89,7 +112,17 @@ for i in range(1000):
 
 assert np.mean(rewards[-100:]) > 0.0
 
-# TODO: créer des vidéos de l'agent en action
+# créer des vidéos de l'agent en action
+env = gym.make("Taxi-v3", render_mode="rgb_array")
+env = RecordVideo(
+    env,
+    video_folder="videos",
+    name_prefix="qlearning_eps_scheduling",
+    episode_trigger=lambda x: x % 1 == 0
+)
+env = RecordEpisodeStatistics(env)
+print("Reward for testing: " + str(play_and_train(env, agent)))
+env.close()
 
 
 ####################
@@ -97,10 +130,21 @@ assert np.mean(rewards[-100:]) > 0.0
 ####################
 
 
-agent = SARSAAgent(learning_rate=0.5, gamma=0.99, legal_actions=list(range(n_actions)))
+agent = SarsaAgent(learning_rate=0.5, gamma=0.99, legal_actions=list(range(n_actions)))
 
 rewards = []
 for i in range(1000):
     rewards.append(play_and_train(env, agent))
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
+
+env = gym.make("Taxi-v3", render_mode="rgb_array")
+env = RecordVideo(
+    env,
+    video_folder="videos",
+    name_prefix="sarsa",
+    episode_trigger=lambda x: x % 1 == 0
+)
+env = RecordEpisodeStatistics(env)
+print("Reward for testing: " + str(play_and_train(env, agent)))
+env.close()
