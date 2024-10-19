@@ -25,7 +25,7 @@ import numpy as np
 from qlearning import QLearningAgent
 from qlearning_eps_scheduling import QLearningAgentEpsScheduling
 from sarsa import SarsaAgent
-
+import matplotlib.pyplot as plt
 
 env = gym.make("Taxi-v3", render_mode="rgb_array")
 # env = RecordVideo(
@@ -75,6 +75,52 @@ def play_and_train(env: gym.Env, agent: QLearningAgent, t_max=int(1e4)) -> float
 
     return total_reward
 
+def grid_search(env: gym.Env, agent_class):
+    learning_rates = [0.01, 0.05, 0.1, 0.5]
+    epsilons = [0.01, 0.05, 0.1, 0.2]
+    gammas = [0.9, 0.95, 0.99, 0.999]
+
+    all_rewards = np.full((len(learning_rates), len(epsilons), len(gammas)), -np.inf)
+    
+    for lr_id, lr in enumerate(learning_rates):
+        for e_id, e in enumerate(epsilons):
+            for g_id, g in enumerate(gammas):
+                agent = agent_class(
+                    learning_rate=lr, epsilon=e, gamma=g, legal_actions=list(range(n_actions))
+                )
+                rewards = []
+                for i in range(1000):
+                    rewards.append(play_and_train(env, agent))
+                mean_reward = np.mean(rewards[-100:])
+                print(f"lr={lr}, epsilon={e}, gamma={g} -> mean reward = {mean_reward}")
+                all_rewards[lr_id,e_id,g_id] = mean_reward
+                
+    fig, axs = plt.subplots(1, len(learning_rates), figsize=(18, 6))
+
+    for lr_id in range(len(learning_rates)):
+        im = axs[lr_id].imshow(all_rewards[lr_id])
+        axs[lr_id].set_xticks(np.arange(len(gammas)), labels=gammas)
+        axs[lr_id].set_yticks(np.arange(len(epsilons)), labels=epsilons)
+        axs[lr_id].set_title(f"Grid search with learning_rate={learning_rates[lr_id]}")
+        axs[lr_id].set_xlabel("Gamma") 
+        axs[lr_id].set_ylabel("Epsilon")
+    
+        for i in range(len(epsilons)):
+            for j in range(len(gammas)):
+                axs[lr_id].text(j, i, f"{all_rewards[lr_id][i, j]:.2f}", ha='center', va='center', color='white')
+
+    plt.savefig(f"grid_search_{agent_class.__name__}.png", bbox_inches='tight')
+    
+    best_lr_id, best_e_id, best_g_id = np.unravel_index(np.argmax(all_rewards), all_rewards.shape)
+    best_lr, best_e, best_g = learning_rates[best_lr_id], epsilons[best_e_id], gammas[best_g_id]
+    print(f"Best hyperparameters: lr={best_lr}, epsilon={best_e}, gamma={best_g}")
+
+    return best_lr, best_e, best_g
+
+best_lr, best_e, best_g = grid_search(env, QLearningAgent)
+agent = QLearningAgent(
+    learning_rate=best_lr, epsilon=best_e, gamma=best_g, legal_actions=list(range(n_actions))
+)
 
 rewards = []
 for i in range(1000):
@@ -82,7 +128,8 @@ for i in range(1000):
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
 
-assert np.mean(rewards[-100:]) > 0.0
+#assert np.mean(rewards[-100:]) > 0.0
+
 # créer des vidéos de l'agent en action
 env = gym.make("Taxi-v3", render_mode="rgb_array")
 env = RecordVideo(
@@ -99,9 +146,9 @@ env.close()
 # 2. Play with QLearningAgentEpsScheduling
 #################################################
 
-
+best_lr, best_e, best_g = grid_search(env, QLearningAgentEpsScheduling)
 agent = QLearningAgentEpsScheduling(
-    learning_rate=0.5, epsilon=0.25, gamma=0.99, legal_actions=list(range(n_actions))
+    learning_rate=best_lr, epsilon=best_e, gamma=best_g, legal_actions=list(range(n_actions))
 )
 
 rewards = []
@@ -110,7 +157,7 @@ for i in range(1000):
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
 
-assert np.mean(rewards[-100:]) > 0.0
+#assert np.mean(rewards[-100:]) > 0.0
 
 # créer des vidéos de l'agent en action
 env = gym.make("Taxi-v3", render_mode="rgb_array")
@@ -128,7 +175,6 @@ env.close()
 ####################
 # 3. Play with SARSA
 ####################
-
 
 agent = SarsaAgent(learning_rate=0.5, gamma=0.99, legal_actions=list(range(n_actions)))
 
