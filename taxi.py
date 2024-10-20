@@ -28,13 +28,6 @@ from sarsa import SarsaAgent
 import matplotlib.pyplot as plt
 
 env = gym.make("Taxi-v3", render_mode="rgb_array")
-# env = RecordVideo(
-#     env,
-#     video_folder="videos",
-#     name_prefix="training",
-#     episode_trigger=lambda x: x % 1 == 0
-# )
-# env = RecordEpisodeStatistics(env)
 n_actions = env.action_space.n  # type: ignore
 
 
@@ -129,8 +122,6 @@ for i in range(2000):
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
 
-#assert np.mean(rewards[-100:]) > 0.0
-
 # créer des vidéos de l'agent en action
 env = gym.make("Taxi-v3", render_mode="rgb_array")
 env = RecordVideo(
@@ -158,8 +149,6 @@ for i in range(2000):
     rewards.append(play_and_train(env, agent))
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
-
-#assert np.mean(rewards[-100:]) > 0.0
 
 # créer des vidéos de l'agent en action
 env = gym.make("Taxi-v3", render_mode="rgb_array")
