@@ -75,7 +75,7 @@ def play_and_train(env: gym.Env, agent: QLearningAgent, t_max=int(1e4)) -> float
 
     return total_reward
 
-def grid_search(env: gym.Env, agent_class):
+def grid_search_qlearning(env: gym.Env):
     learning_rates = [0.01, 0.05, 0.1, 0.5]
     epsilons = [0.01, 0.05, 0.1, 0.2]
     gammas = [0.9, 0.95, 0.99, 0.999]
@@ -85,12 +85,12 @@ def grid_search(env: gym.Env, agent_class):
     for lr_id, lr in enumerate(learning_rates):
         for e_id, e in enumerate(epsilons):
             for g_id, g in enumerate(gammas):
-                agent = agent_class(
+                agent = QLearningAgent(
                     learning_rate=lr, epsilon=e, gamma=g, legal_actions=list(range(n_actions))
                 )
                 rewards = []
-                for i in range(1000):
-                    rewards.append(play_and_train(env, agent))
+                for i in range(2000):
+                    rewards.append(play_and_train(env, agent, t_max=int(1e3)))
                 mean_reward = np.mean(rewards[-100:])
                 print(f"lr={lr}, epsilon={e}, gamma={g} -> mean reward = {mean_reward}")
                 all_rewards[lr_id,e_id,g_id] = mean_reward
@@ -109,7 +109,7 @@ def grid_search(env: gym.Env, agent_class):
             for j in range(len(gammas)):
                 axs[lr_id].text(j, i, f"{all_rewards[lr_id][i, j]:.2f}", ha='center', va='center', color='white')
 
-    plt.savefig(f"grid_search_{agent_class.__name__}.png", bbox_inches='tight')
+    plt.savefig(f"grid_search_qlearning.png", bbox_inches='tight')
     
     best_lr_id, best_e_id, best_g_id = np.unravel_index(np.argmax(all_rewards), all_rewards.shape)
     best_lr, best_e, best_g = learning_rates[best_lr_id], epsilons[best_e_id], gammas[best_g_id]
@@ -117,13 +117,14 @@ def grid_search(env: gym.Env, agent_class):
 
     return best_lr, best_e, best_g
 
-best_lr, best_e, best_g = grid_search(env, QLearningAgent)
+best_lr, best_e, best_g = grid_search_qlearning(env)
+
 agent = QLearningAgent(
     learning_rate=best_lr, epsilon=best_e, gamma=best_g, legal_actions=list(range(n_actions))
 )
 
 rewards = []
-for i in range(1000):
+for i in range(2000):
     rewards.append(play_and_train(env, agent))
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
@@ -146,13 +147,14 @@ env.close()
 # 2. Play with QLearningAgentEpsScheduling
 #################################################
 
-best_lr, best_e, best_g = grid_search(env, QLearningAgentEpsScheduling)
+env = gym.make("Taxi-v3", render_mode="rgb_array")
+
 agent = QLearningAgentEpsScheduling(
     learning_rate=best_lr, epsilon=best_e, gamma=best_g, legal_actions=list(range(n_actions))
 )
 
 rewards = []
-for i in range(1000):
+for i in range(2000):
     rewards.append(play_and_train(env, agent))
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
@@ -176,10 +178,55 @@ env.close()
 # 3. Play with SARSA
 ####################
 
-agent = SarsaAgent(learning_rate=0.5, gamma=0.99, legal_actions=list(range(n_actions)))
+env = gym.make("Taxi-v3", render_mode="rgb_array")
+
+def grid_search_sarsa(env: gym.Env):
+    learning_rates = [0.01, 0.05, 0.1, 0.5]
+    gammas = [0.9, 0.95, 0.99, 0.999]
+
+    all_rewards = np.full((len(learning_rates), len(gammas)), -np.inf)
+    
+    for lr_id, lr in enumerate(learning_rates):
+        for g_id, g in enumerate(gammas):
+            agent = SarsaAgent(
+                learning_rate=lr, gamma=g, legal_actions=list(range(n_actions))
+            )
+            rewards = []
+            for i in range(2000):
+                rewards.append(play_and_train(env, agent, t_max=int(1e3)))
+            mean_reward = np.mean(rewards[-100:])
+            print(f"lr={lr}, gamma={g} -> mean reward = {mean_reward}")
+            all_rewards[lr_id,g_id] = mean_reward
+                
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    im = ax.imshow(all_rewards)
+    ax.set_xticks(np.arange(len(gammas)))
+    ax.set_xticklabels(gammas)
+    ax.set_yticks(np.arange(len(learning_rates)))
+    ax.set_yticklabels(learning_rates)
+    ax.set_title(f"Grid search for Sarsa")
+    ax.set_xlabel("Gamma") 
+    ax.set_ylabel("Learning rates")
+
+    for i in range(len(learning_rates)):
+        for j in range(len(gammas)):
+            ax.text(j, i, f"{all_rewards[i, j]:.2f}", ha='center', va='center', color='white')
+
+    plt.savefig(f"grid_search_sarsa.png", bbox_inches='tight')
+    
+    best_lr_id, best_g_id = np.unravel_index(np.argmax(all_rewards), all_rewards.shape)
+    best_lr, best_g = learning_rates[best_lr_id], gammas[best_g_id]
+    print(f"Best hyperparameters: lr={best_lr}, gamma={best_g}")
+
+    return best_lr, best_g
+
+best_lr, best_g = grid_search_sarsa(env)
+
+agent = SarsaAgent(learning_rate=best_lr, gamma=best_g, legal_actions=list(range(n_actions)))
 
 rewards = []
-for i in range(1000):
+for i in range(2000):
     rewards.append(play_and_train(env, agent))
     if i % 100 == 0:
         print("mean reward", np.mean(rewards[-100:]))
